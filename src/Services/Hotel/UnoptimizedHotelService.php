@@ -9,6 +9,7 @@ use App\Entities\RoomEntity;
 use App\Services\Room\RoomService;
 use Exception;
 use PDO;
+use App\Common\Timers;
 
 /**
  * Une classe utilitaire pour récupérer les données des magasins stockés en base de données
@@ -225,7 +226,10 @@ class UnoptimizedHotelService extends AbstractHotelService {
       ->setName( $data['display_name'] );
     
     // Charge les données meta de l'hôtel
+    $timer = Timers::getInstance();
+    $timerId = $timer->startTimer('getMetas');
     $metasData = $this->getMetas( $hotel );
+    $timer->endTimer('getMetas', $timerId);
     $hotel->setAddress( $metasData['address'] );
     $hotel->setGeoLat( $metasData['geo_lat'] );
     $hotel->setGeoLng( $metasData['geo_lng'] );
@@ -233,12 +237,20 @@ class UnoptimizedHotelService extends AbstractHotelService {
     $hotel->setPhone( $metasData['phone'] );
     
     // Définit la note moyenne et le nombre d'avis de l'hôtel
+
+    $timer = Timers::getInstance();
+    $timerId = $timer->startTimer('getReviews');
     $reviewsData = $this->getReviews( $hotel );
+    $timer->endTimer('getReviews', $timerId);
+    
     $hotel->setRating( $reviewsData['rating'] );
     $hotel->setRatingCount( $reviewsData['count'] );
     
     // Charge la chambre la moins chère de l'hôtel
+    $timer = Timers::getInstance();
+    $timerId = $timer->startTimer('getCheapestRoom');
     $cheapestRoom = $this->getCheapestRoom( $hotel, $args );
+    $timer->endTimer('getCheapestRoom', $timerId);
     $hotel->setCheapestRoom($cheapestRoom);
     
     // Verification de la distance
@@ -277,7 +289,7 @@ class UnoptimizedHotelService extends AbstractHotelService {
    */
   public function list ( array $args = [] ) : array {
     $db = $this->getDB();
-    $stmt = $db->prepare( "SELECT * FROM wp_users" );
+    $stmt = $db->prepare( "SELECT * FROM wp_users  " );
     $stmt->execute();
     
     $results = [];
